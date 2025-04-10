@@ -1,0 +1,40 @@
+services:
+  orders:
+    build: .
+    ports:
+      - "8083:8083"
+    env_file: .env
+    volumes:
+      - /var/log:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+    networks:
+      - order_network
+      - microservices_network
+
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - orders_data:/var/lib/postgresql/data
+      - ./db/initDB:/docker-entrypoint-initdb.d
+    env_file: .env
+    ports:
+        - "5433:5432"
+    restart: always
+    networks:
+      - order_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U talgat -d orders" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+volumes:
+  orders_data:
+
+networks:
+  order_network:
+  microservices_network:
+    external: true
